@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="he">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MiaHost - פאנל ניהול בוטים מתקדם</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #36393f;
+            color: #ffffff;
+            margin: 0;
+            padding: 0;
+        }
+        #login-screen {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background: linear-gradient(135deg, #23272a 0%, #5865F2 100%);
+        }
+        .login-box {
+            background-color: #2f3136;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            text-align: center;
+            width: 360px;
+        }
+        .login-box h2 { margin-top: 0; color: #fff; }
+        .login-input {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            background: #202225;
+            border: 1px solid #4f545c;
+            color: white;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        .btn {
+            padding: 10px 18px;
+            border: none;
+            border-radius: 5px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            color: white;
+            transition: 0.2s;
+        }
+        .btn-primary { background-color: #5865F2; width: 100%; margin-top: 10px; padding: 12px; font-size: 16px; }
+        .btn-primary:hover { background-color: #4752C4; }
+        .btn-success { background-color: #3ba55c; }
+        .btn-success:hover { background-color: #2d7d46; }
+        .btn-danger { background-color: #ed4245; }
+        .btn-danger:hover { background-color: #c03537; }
+        .btn-secondary { background-color: #4f545c; }
+        .btn-secondary:hover { background-color: #5d6269; }
+        .btn-warning { background-color: #e67e22; }
+        .btn-warning:hover { background-color: #d35400; }
+
+        #app-screen { display: none; padding: 20px; max-width: 1100px; margin: auto; }
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #202225;
+            padding: 15px 25px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .navbar h1 { margin: 0; font-size: 22px; color: #5865F2; }
+
+        .alert-banner {
+            background-color: rgba(250, 166, 26, 0.15);
+            border: 1px solid #faa61a;
+            color: #fff;
+            padding: 12px 18px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .bots-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+        }
+        .bot-card {
+            background-color: #2f3136;
+            border-radius: 10px;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: 0.2s;
+        }
+        .bot-card:hover { border-color: #5865F2; transform: translateY(-3px); }
+        .bot-card img {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            margin-left: 15px;
+            border: 3px solid #ed4245;
+        }
+        .bot-card img.online { border-color: #3ba55c; }
+        .bot-card-info h3 { margin: 0 0 5px 0; font-size: 18px; }
+        .bot-card-info p { margin: 0; font-size: 13px; color: #b9bbbe; }
+
+        .add-bot-card {
+            background-color: rgba(88, 101, 242, 0.1);
+            border: 2px dashed #5865F2;
+            justify-content: center;
+            color: #5865F2;
+            font-size: 18px;
+            font-weight: bold;
+            min-height: 106px;
+        }
+        .add-bot-card:hover { background-color: rgba(88, 101, 242, 0.2); }
+
+        #bot-panel-view { display: none; background-color: #2f3136; padding: 25px; border-radius: 12px; }
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #202225;
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .settings-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .box { background-color: #202225; padding: 15px; border-radius: 8px; }
+        .box h4 { margin-top: 0; margin-bottom: 10px; color: #b9bbbe; }
+        .input-text {
+            width: 100%;
+            padding: 10px;
+            background-color: #1e1f22;
+            border: 1px solid #4f545c;
+            color: white;
+            border-radius: 5px;
+            direction: ltr;
+        }
+        textarea {
+            width: 100%;
+            height: 230px;
+            background-color: #1e1f22;
+            color: #00ff88;
+            border: 1px solid #4f545c;
+            border-radius: 8px;
+            padding: 12px;
+            font-family: Consolas, monospace;
+            font-size: 14px;
+            direction: ltr;
+            text-align: left;
+            resize: vertical;
+        }
+        .console {
+            background-color: #000000;
+            color: #cccccc;
+            height: 190px;
+            border-radius: 8px;
+            padding: 12px;
+            font-family: Consolas, monospace;
+            font-size: 13px;
+            overflow-y: auto;
+            direction: ltr;
+            text-align: left;
+        }
+        .file-upload-btn {
+            background-color: #5865F2;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            display: inline-block;
+            font-weight: bold;
+        }
+        input[type="file"] { display: none; }
+        .log-info { color: #5865F2; }
+        .log-success { color: #3ba55c; font-weight: bold; }
+        .log-error { color: #ed4245; font-weight: bold; }
+        .log-warn { color: #faa61a; }
+    </style>
+</head>
+<body>
+
+    <!-- 1. מסך התחברות -->
+    <div id="login-screen">
+        <div class="login-box">
+            <h2>🔒 התחברות ל-MiaHost</h2>
+            <p style="color: #b9bbbe; font-size: 14px;">מערכת האחסון הפרטית של מיה</p>
+            <input type="text" id="username" class="login-input" placeholder="שם משתמש">
+            <input type="password" id="password" class="login-input" placeholder="סיסמה">
+            <button class="btn btn-primary" onclick="login()">התחברי למערכת</button>
+            <p id="login-error" style="color: #ed4245; display: none; margin-top: 10px;">שם משתמש או סיסמה שגויים!</p>
+        </div>
+    </div>
+
+    <!-- 2. המערכת הראשית -->
+    <div id="app-screen">
+        <div class="navbar">
+            <h1>👑 הפאנל של מיה (MiaHost Pro)</h1>
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <button class="btn btn-warning" onclick="downloadReadyServerZip()">📥 הורד קבצי שרת מוכנים (ZIP)</button>
+                <span style="color: #b9bbbe;">משתמשת: <b>mia</b></span>
+                <button class="btn btn-danger" onclick="logout()">התנתקי</button>
+            </div>
+        </div>
+
+        <div class="alert-banner">
+            <div>
+                💡 <b>טיפ חשוב לכפתורים וטיקטים ב-GitHub Pages:</b> כדי שהדפדפן לא יחסום פתיחת טיקטים (CORS), הפעילי תוסף <b>Allow CORS</b> בכרום, או לחצי על הכפתור הכתום למעלה להורדת שרת Node.js מוכן!
+            </div>
+        </div>
+
+        <!-- מסך הבית - כל הבוטים -->
+        <div id="dashboard-view">
+            <h2 style="margin-bottom: 15px;">🤖 הבוטים שלי:</h2>
+            <div class="bots-grid" id="bots-container"></div>
+        </div>
+
+        <!-- מסך ניהול בוט -->
+        <div id="bot-panel-view">
+            <div class="panel-header">
+                <div style="display: flex; align-items: center;">
+                    <button class="btn btn-secondary" onclick="showDashboard()" style="margin-left: 15px;">⬅ חזרה לכל הבוטים</button>
+                    <img src="" id="current-bot-avatar" style="width: 50px; height: 50px; border-radius: 50%; margin-left: 12px;">
+                    <div>
+                        <h2 id="current-bot-name" style="margin: 0;">שם הבוט</h2>
+                        <span id="current-bot-status" style="font-size: 14px; color: #b9bbbe;">כבוי</span>
+                    </div>
+                </div>
+                <div>
+                    <button class="btn btn-success" onclick="startCurrentBot()">▶ הפעל בוט</button>
+                    <button class="btn btn-danger" onclick="stopCurrentBot()">⏹ עצור</button>
+                    <button class="btn btn-secondary" onclick="deleteCurrentBot()" style="background: #202225; color: #ed4245; margin-right: 10px;">🗑️ מחק בוט</button>
+                </div>
+            </div>
+
+            <div class="settings-grid">
+                <div class="box">
+                    <h4>🔑 טוקן של הבוט (Token):</h4>
+                    <input type="password" id="bot-token" class="input-text" placeholder="הדביקי כאן את הטוקן מדיסקורד..." oninput="saveBotChanges()">
+                </div>
+                <div class="box">
+                    <h4>📦 העלאת קובץ בודד או ZIP שלם:</h4>
+                    <label class="file-upload-btn">
+                        בחרי קובץ (ZIP / JS)
+                        <input type="file" id="file-input" accept=".zip,.js,.txt,.json" onchange="handleFileUpload(event)">
+                    </label>
+                    <span id="uploaded-file-name" style="margin-right: 10px; font-size: 13px; color: #b9bbbe;"></span>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                <h4>📝 קוד הבוט הראשי:</h4>
+                <textarea id="bot-code" oninput="saveBotChanges()"></textarea>
+            </div>
+
+            <div>
+                <h4>💻 קונסול שרת (Live Logs):</h4>
+                <div class="console" id="console-box"></div>
+            </div>
+        </div>
+    </div>
+
+<script>
+    // ============================================================================
+    // חלק 1: ניהול המערכת, שמירה והעלאת קבצים/ZIP
+    // ============================================================================
+    let bots = JSON.parse(localStorage.getItem('mia_bots_v5')) || [];
+    let currentBotId = null;
+    let runningEngines = {};
+
+    const DEFAULT_BOT_CODE = `require('dotenv').config();
+const { Client, GatewayIntentBits, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, ChannelType, PermissionFlagsBits } = require('discord.js');
+
+const client = new Client({
+    intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent]
+});
+
+client.on('ready', () => {
+    console.log('הבוט מוכן! שלחי !panel בשרת כדי לשלוח פאנל טיקטים עובד!');
+});
+
+client.on('messageCreate', async (message) => {
+    if (message.author.bot) return;
+
+    if (message.content === '!panel') {
+        const embed = new EmbedBuilder()
+            .setTitle('🎫 מערכת תמיכה ופתיחת טיקט')
+            .setDescription('לחצו על הכפתור למטה כדי לפתוח טיקט חדש מול הצוות!')
+            .setColor(0xed4245);
+
+        const row = new ActionRowBuilder().addComponents(
+            new ButtonBuilder()
+                .setCustomId('open_ticket')
+                .setLabel('פתיחת טיקט')
+                .setStyle(ButtonStyle.Danger)
+        );
+
+        await message.channel.send({ embeds: [embed], components: [row] });
+    }
+});
+
+client.login(process.env.TOKEN);`;
+
+    window.onload = function() {
+        if (localStorage.getItem('mia_logged_in') === 'true') {
+            unlockApp();
+        }
+    };
+
+    function login() {
+        const u = document.getElementById('username').value.trim();
+        const p = document.getElementById('password').value.trim();
+        if (u === 'mia' && p === '2234') {
+            localStorage.setItem('mia_logged_in', 'true');
+            document.getElementById('login-error').style.display = 'none';
+            unlockApp();
+        } else {
+            document.getElementById('login-error').style.display = 'block';
+        }
+    }
+
+    function logout() {
+        localStorage.setItem('mia_logged_in', 'false');
+        location.reload();
+    }
+
+    function unlockApp() {
+        document.getElementById('login-screen').style.display = 'none';
+        document.getElementById('app-screen').style.display = 'block';
+        renderDashboard();
+        bots.forEach(bot => {
+            if (bot.isRunning && bot.token) {
+                executeBotEngine(bot.id, true);
+            }
+        });
+    }
+
+    function saveToStorage() {
+        try {
+            localStorage.setItem('mia_bots_v5', JSON.stringify(bots));
+        } catch (e) {}
+    }
+
+    function renderDashboard() {
+        const container = document.getElementById('bots-container');
+        container.innerHTML = '';
+
+        bots.forEach(bot => {
+            const card = document.createElement('div');
+            card.className = 'bot-card';
+            card.onclick = () => openBotPanel(bot.id);
+            card.innerHTML = `
+                <img src="${bot.avatar}" class="${bot.isRunning ? 'online' : ''}">
+                <div class="bot-card-info">
+                    <h3>${bot.name}</h3>
+                    <p>${bot.isRunning ? '🟢 פועל (Online)' : '🔴 כבוי (Offline)'}</p>
+                    <p style="font-size: 11px; margin-top: 4px;">קובץ: ${bot.fileName || 'index.js'}</p>
+                </div>
+            `;
+            container.appendChild(card);
+        });
+
+        const addCard = document.createElement('div');
+        addCard.className = 'bot-card add-bot-card';
+        addCard.onclick = createNewBot;
+        addCard.innerHTML = '+ יצירת בוט חדש';
+        container.appendChild(addCard);
+    }
+
+    function createNewBot() {
+        const newBot = {
+            id: 'bot_' + Date.now(),
+            name: 'בוט חדש #' + (bots.length + 1),
+            token: '',
+            code: DEFAULT_BOT_CODE,
+            vfs: { 'index.js': DEFAULT_BOT_CODE },
+            avatar: 'https://cdn.discordapp.com/embed/avatars/0.png',
+            isRunning: false,
+            fileName: 'index.js',
+            logs: ['[System] השרת מוכן! הכניסי טוקן ולחצי על הפעל בוט.']
+        };
+        bots.push(newBot);
+        saveToStorage();
+        openBotPanel(newBot.id);
+    }
+
+    function showDashboard() {
+        currentBotId = null;
+        document.getElementById('bot-panel-view').style.display = 'none';
+        document.getElementById('dashboard-view').style.display = 'block';
+        renderDashboard();
+    }
+
+    function openBotPanel(botId) {
+        currentBotId = botId;
+        const bot = bots.find(b => b.id === botId);
+        if (!bot) return;
+        if (!bot.vfs) bot.vfs = {};
+
+        document.getElementById('dashboard-view').style.display = 'none';
+        document.getElementById('bot-panel-view').style.display = 'block';
+
+        document.getElementById('bot-token').value = bot.token;
+        document.getElementById('bot-code').value = bot.code;
+        document.getElementById('uploaded-file-name').innerText = bot.fileName;
+
+        updateBotStatusUI(bot);
+        renderConsole(bot);
+    }
+
+    function updateBotStatusUI(bot) {
+        if (currentBotId !== bot.id) return;
+        document.getElementById('current-bot-name').innerText = bot.name;
+        const avatarEl = document.getElementById('current-bot-avatar');
+        const statusEl = document.getElementById('current-bot-status');
+        avatarEl.src = bot.avatar;
+
+        if (bot.isRunning) {
+            statusEl.innerHTML = '<span style="color:#3ba55c;">🟢 פועל ומחובר לדיסקורד</span>';
+            avatarEl.style.border = '3px solid #3ba55c';
+        } else {
+            statusEl.innerHTML = '<span style="color:#ed4245;">🔴 כבוי</span>';
+            avatarEl.style.border = '3px solid #ed4245';
+        }
+    }
+
+    function saveBotChanges() {
+        if (!currentBotId) return;
+        const bot = bots.find(b => b.id === currentBotId);
+        bot.token = document.getElementById('bot-token').value.trim();
+        bot.code = document.getElementById('bot-code').value;
+        if (!bot.vfs) bot.vfs = {};
+        bot.vfs[bot.fileName || 'index.js'] = bot.code;
+        saveToStorage();
+    }
+
+    function deleteCurrentBot() {
+        if (!confirm('בטוחה שאת רוצה למחוק את הבוט הזה?')) return;
+        stopBotEngine(currentBotId);
+        bots = bots.filter(b => b.id !== currentBotId);
+        saveToStorage();
+        showDashboard();
+    }
+
+    async function handleFileUpload(event) {
+        const file = event.target.files[0];
+        if (!file || !currentBotId) return;
+        const bot = bots.find(b => b.id === currentBotId);
+        if (!bot.vfs) bot.vfs = {};
+
+        if (file.name.endsWith('.zip')) {
+            addLog(bot.id, `📦 מחלץ את כל תיקיות ה-ZIP (${file.name})...`, 'log-warn');
+            try {
+                const zip = await JSZip.loadAsync(file);
+                bot.vfs = {};
+                let extractedCount = 0;
+
+                const promises = [];
+                zip.forEach((relativePath, zipEntry) => {
+                    if (!zipEntry.dir && !relativePath.includes('node_modules') && !relativePath.includes('.git')) {
+                        if (relativePath.endsWith('.js') || relativePath.endsWith('.json') || relativePath.endsWith('.env') || relativePath.endsWith('.txt')) {
+                            const p = zipEntry.async('string').then(content => {
+                                let cleanPath = relativePath;
+                                const parts = relativePath.split('/');
+                                if (parts.length > 1 && !['commands', 'events', 'handlers', 'src', 'utils', 'models'].includes(parts[0])) {
+                                    cleanPath = parts.slice(1).join('/');
+                                }
+                                bot.vfs[cleanPath] = content;
+                                bot.vfs[relativePath] = content;
+                                extractedCount++;
+                            });
+                            promises.push(p);
+                        }
+                    }
+                });
+
+                await Promise.all(promises);
+
+                let mainFile = 'index.js';
+                if (bot.vfs['package.json']) {
+                    try {
+                        const pkg = JSON.parse(bot.vfs['package.json']);
+                        if (pkg.main && bot.vfs[pkg.main]) mainFile = pkg.main;
+                    } catch (e) {}
+                }
+                if (!bot.vfs[mainFile]) {
+                    const possibleMains = ['index.js', 'bot.js', 'main.js', 'src/index.js', 'src/bot.js'];
+                    mainFile = possibleMains.find(m => bot.vfs[m]) || Object.keys(bot.vfs).find(k => k.endsWith('.js'));
+                }
+
+                if (!bot.token) {
+                    const envContent = bot.vfs['.env'];
+                    if (envContent) {
+                        const match = envContent.match(/(?:TOKEN|BOT_TOKEN|DISCORD_TOKEN)\s*=\s*([^\s"']+)/i);
+                        if (match && match[1]) {
+                            bot.token = match[1];
+                            document.getElementById('bot-token').value = bot.token;
+                            addLog(bot.id, `🔑 הטוקן זוהה אוטומטית מתוך קובץ ה-.env!`, 'log-success');
+                        }
+                    }
+                    if (!bot.token && bot.vfs['config.json']) {
+                        try {
+                            const cfg = JSON.parse(bot.vfs['config.json']);
+                            if (cfg.token && cfg.token.length > 20) {
+                                bot.token = cfg.token;
+                                document.getElementById('bot-token').value = bot.token;
+                                addLog(bot.id, `🔑 הטוקן זוהה אוטומטית מתוך config.json!`, 'log-success');
+                            }
+                        } catch (e) {}
+                    }
+                }
+
+                if (mainFile && bot.vfs[mainFile]) {
+                    bot.fileName = mainFile;
+                    bot.code = bot.vfs[mainFile];
+                    document.getElementById('bot-code').value = bot.code;
+                    document.getElementById('uploaded-file-name').innerText = `${file.name} (${mainFile})`;
+                    addLog(bot.id, `✅ חולצו ${extractedCount} קבצים! הקובץ הראשי (${mainFile}) מוכן!`, 'log-success');
+                }
+                saveToStorage();
+            } catch (err) {
+                addLog(bot.id, `❌ שגיאה בקריאת ה-ZIP: ${err.message}`, 'log-error');
+            }
+        } else {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                bot.fileName = file.name;
+                bot.code = e.target.result;
+                bot.vfs[file.name] = bot.code;
+                document.getElementById('bot-code').value = bot.code;
+                document.getElementById('uploaded-file-name').innerText = file.name;
+                saveToStorage();
+                addLog(bot.id, `📄 הקובץ "${file.name}" נטען בהצלחה!`, 'log-info');
+            };
+            reader.readAsText(file);
+        }
+    }
+
+    function addLog(botId, message, type = '') {
+        const bot = bots.find(b => b.id === botId);
+        if (!bot) return;
+        const time = new Date().toLocaleTimeString();
+        bot.logs.push(`<div class="${type}">[${time}] ${message}</div>`);
+        if (bot.logs.length > 80) bot.logs.shift();
+        saveToStorage();
+        if (currentBotId === botId) renderConsole(bot);
+    }
+
+    function renderConsole(bot) {
+        const box = document.getElementById('console-box');
+        box.innerHTML = bot.logs.join('');
+        box.scrollTop = box.scrollHeight;
+    }
+
+    function startCurrentBot() {
+        if (currentBotId) {
+            saveBotChanges();
+            executeBotEngine(currentBotId, false);
+        }
+    }
+
+    function stopCurrentBot() {
+        if (currentBotId) stopBotEngine(currentBotId);
+    }
+
+    function stopBotEngine(botId) {
+        const bot = bots.find(b => b.id === botId);
+        if (!bot) return;
+        bot.isRunning = false;
+        saveToStorage();
+        updateBotStatusUI(bot);
+
+        if (runningEngines[botId]) {
+            runningEngines[botId].destroy();
+            delete runningEngines[botId];
+        }
+        addLog(botId, '🛑 הבוט כובה.', 'log-error');
+    }
+
+    // ============================================================================
+    // כפתור הורדת קבצי שרת מוכנים (פותר את בעיית השמות בווינדוס!)
+    // ============================================================================
+    async function downloadReadyServerZip() {
+        const zip = new JSZip();
+
+        const pkgJson = {
+            name: "mia-bot-server",
+            version: "1.0.0",
+            main: "server.js",
+            scripts: { start: "node server.js" },
+            dependencies: {
+                "discord.js": "^14.14.1",
+                "dotenv": "^16.4.5"
+            }
+        };
+
+        const activeBot = bots.find(b => b.id === currentBotId) || bots[0];
+        const tokenToSave = activeBot && activeBot.token ? activeBot.token : "PUT_YOUR_BOT_TOKEN_HERE";
+        const codeToSave = activeBot && activeBot.code ? activeBot.code : DEFAULT_BOT_CODE;
+
+        zip.file("package.json", JSON.stringify(pkgJson, null, 2));
+        zip.file(".env", `TOKEN=${tokenToSave}\nDISCORD_TOKEN=${tokenToSave}\nBOT_TOKEN=${tokenToSave}\n`);
+        zip.file("server.js", codeToSave);
+        zip.file("start.bat", `@echo off\ntitle MiaHost Real Bot Server\necho Installing Discord.js...\ncall npm install\ncls\necho Starting Bot...\nnode server.js\npause`);
+
+        const content = await zip.generateAsync({ type: "blob" });
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(content);
+        a.download = "MiaHost-Ready-Server.zip";
+        a.click();
+    }
+
+    // ============================================================================
+    // חלק 2: מנוע תקשורת מול דיסקורד (Direct + Multi-Proxy)
+    // ============================================================================
+    async function discordRestAPI(endpoint, method, botToken, bodyData, botIdForLog) {
+        const targetUrl = 'https://discord.com/api/v10' + endpoint;
+        const headers = { 'Content-Type': 'application/json' };
+        if (botToken) headers['Authorization'] = `Bot ${botToken}`;
+
+        const fetchOptions = {
+            method: method,
+            headers: headers,
+            body: bodyData ? JSON.stringify(bodyData) : undefined
+        };
+
+        // מנסה קודם חיבור ישיר ומהיר (עובד ב-0.05 שניות עם Allow CORS), ואז פרוקסי גיבוי
+        const urlsToTry = [
+            targetUrl,
+            'https://cors.eu.org/' + targetUrl,
+            'https://corsproxy.io/?' + encodeURIComponent(targetUrl)
+        ];
+
+        let lastErr = null;
+        for (const url of urlsToTry) {
+            try {
+                const response = await fetch(url, fetchOptions);
+                if (response.status === 204) return {};
+                const data = await response.json();
+                if (!response.ok) {
+                    throw new Error(data.message || `HTTP ${response.status}`);
+                }
+                return data;
+            } catch (err) {
+                lastErr = err;
+            }
+        }
+
+        if (botIdForLog) {
+            addLog(botIdForLog, `⚠️ הדפדפן חסם את שליחת הפעולה לדיסקורד (CORS). התקיני תוסף "Allow CORS" בכרום או הורידי את קבצי השרת מהכפתור הכתום למעלה!`, 'log-error');
+        }
+        throw lastErr;
+    }
+
+    function formatPayload(options) {
+        if (typeof options === 'string') return { content: options };
+        if (!options) return { content: '✅' };
+        const payload = {};
+        if (options.content !== undefined) payload.content = String(options.content);
+        if (options.ephemeral || options.flags === 64) payload.flags = 64;
+        if (options.embeds) payload.embeds = options.embeds.map(e => (e && e.toJSON) ? e.toJSON() : (e && e.data ? e.data : e));
+        if (options.components) payload.components = options.components.map(c => (c && c.toJSON) ? c.toJSON() : (c && c.data ? c.data : c));
+        return payload;
+    }
+
+    function resolveBitfield(bits) {
+        if (!bits) return "0";
+        if (typeof bits === 'string' || typeof bits === 'number' || typeof bits === 'bigint') return String(bits);
+        if (Array.isArray(bits)) {
+            let total = 0n;
+            bits.forEach(b => { try { total |= BigInt(b); } catch (e) {} });
+            return total.toString();
+        }
+        return "0";
+    }
+
+    function createChannelObject(rawChannel, botToken, botId) {
+        const chId = rawChannel.id;
+        return {
+            id: chId,
+            name: rawChannel.name || 'ticket',
+            guildId: rawChannel.guild_id,
+            toString: () => `<#${chId}>`,
+            send: async (options) => {
+                const payload = formatPayload(options);
+                const sent = await discordRestAPI(`/channels/${chId}/messages`, 'POST', botToken, payload, botId);
+                return {
+                    id: sent ? sent.id : '0',
+                    edit: async (editOpts) => await discordRestAPI(`/channels/${chId}/messages/${sent.id}`, 'PATCH', botToken, formatPayload(editOpts), botId),
+                    delete: async () => await discordRestAPI(`/channels/${chId}/messages/${sent.id}`, 'DELETE', botToken, null, botId)
+                };
+            },
+            sendTyping: async () => {},
+            delete: async () => await discordRestAPI(`/channels/${chId}`, 'DELETE', botToken, null, botId),
+            setName: async (newName) => await discordRestAPI(`/channels/${chId}`, 'PATCH', botToken, { name: newName }, botId),
+            setTopic: async (newTopic) => await discordRestAPI(`/channels/${chId}`, 'PATCH', botToken, { topic: newTopic }, botId),
+            permissionOverwrites: { edit: async () => {}, create: async () => {}, delete: async () => {}, set: async () => {} }
+        };
+    }
+
+    class DiscordCollection extends Map {
+        find(fn) { for (const [k, v] of this) { if (fn(v, k, this)) return v; } return undefined; }
+        filter(fn) { const r = new DiscordCollection(); for (const [k, v] of this) { if (fn(v, k, this)) r.set(k, v); } return r; }
+        map(fn) { const a = []; for (const [k, v] of this) a.push(fn(v, k, this)); return a; }
+        first() { return this.values().next().value; }
+    }
+
+    function createSafeMock() {
+        const noop = () => createSafeMock();
+        return new Proxy(noop, {
+            get: (target, prop) => {
+                if (prop === 'then') return undefined;
+                if (prop === Symbol.toPrimitive) return () => '';
+                if (prop === 'toString') return () => '';
+                if (prop === 'config') return () => ({});
+                if (prop === 'cache') return new DiscordCollection();
+                return createSafeMock();
+            },
+            apply: () => createSafeMock(),
+            construct: () => createSafeMock()
+        });
+    }
+
+    function executeBotEngine(botId, isAuto = false) {
+        const bot = bots.find(b => b.id === botId);
+        if (!bot) return;
+
+        if (!bot.token) {
+            addLog(botId, '❌ שגיאה: חובה להכניס טוקן של הבוט בתיבה למעלה!', 'log-error');
+            if (!isAuto) alert('הכניסי את הטוקן של הבוט בתיבה למעלה!');
+            return;
+        }
+
+        if (runningEngines[botId]) {
+            runningEngines[botId].destroy();
+        }
+
+        bot.isRunning = true;
+        if (!bot.vfs) bot.vfs = { 'index.js': bot.code };
+        bot.vfs[bot.fileName || 'index.js'] = bot.code;
+        saveToStorage();
+        updateBotStatusUI(bot);
+        addLog(botId, isAuto ? '🔄 משחזר חיבור אוטומטי...' : '🚀 מפעיל את הבוט ומחבר מנוע כפתורים וטיקטים...', 'log-info');
+
+        const virtualProcess = {
+            env: { TOKEN: bot.token, DISCORD_TOKEN: bot.token, BOT_TOKEN: bot.token, PREFIX: '!' },
+            on: () => {},
+            exit: () => stopBotEngine(botId),
+            cwd: () => '/'
+        };
+
+        class GenericBuilder {
+            constructor(type) { this.data = { type }; }
+            setCustomId(id) { this.data.custom_id = id; return this; }
+            setLabel(l) { this.data.label = l; return this; }
+            setTitle(t) { this.data.title = t; return this; }
+            setDescription(d) { this.data.description = d; return this; }
+            setStyle(s) {
+                const map = { Primary: 1, Secondary: 2, Success: 3, Danger: 4, Link: 5, Short: 1, Paragraph: 2 };
+                this.data.style = map[s] || (typeof s === 'number' ? s : 1);
+                return this;
+            }
+            setEmoji(e) { this.data.emoji = typeof e === 'string' ? { name: e } : e; return this; }
+            setURL(u) { this.data.url = u; this.data.style = 5; return this; }
+            setDisabled(d = true) { this.data.disabled = d; return this; }
+            setColor(c) { this.data.color = typeof c === 'string' ? parseInt(c.replace('#',''), 16) || 0x5865F2 : c; return this; }
+            setFooter(f) { this.data.footer = typeof f === 'string' ? { text: f } : f; return this; }
+            setAuthor(a) { this.data.author = typeof a === 'string' ? { name: a } : a; return this; }
